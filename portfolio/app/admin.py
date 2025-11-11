@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils.html import format_html
 from .models import UserProfile, UserActivityLog
@@ -9,6 +11,8 @@ from .models import UserProfile, UserActivityLog
 class UserProfileAdmin(GISModelAdmin):
     """
     Admin interface for UserProfile with map widget for location field
+    Staff users can only view/edit their own profile
+    Superusers can view/edit all profiles
     """
     list_display = ['user', 'phone_number', 'created_at', 'updated_at', 'view_on_map_button']
     search_fields = ['user__username', 'user__email', 'phone_number', 'home_address']
@@ -30,6 +34,41 @@ class UserProfileAdmin(GISModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def get_queryset(self, request):
+        """
+        Filter queryset based on user permissions
+        Non-superuser staff can only see their own profile
+        """
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Non-superuser staff users only see their own profile
+        return qs.filter(user=request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        """
+        Non-superuser staff can only change their own profile
+        """
+        if request.user.is_superuser:
+            return True
+        if obj is not None and obj.user != request.user:
+            return False
+        return super().has_change_permission(request, obj)
+    
+    def has_delete_permission(self, request, obj=None):
+        """
+        Only superusers can delete profiles
+        """
+        if request.user.is_superuser:
+            return True
+        return False
+    
+    def has_add_permission(self, request):
+        """
+        Profiles are created automatically, no manual creation
+        """
+        return False
     
     def view_on_map_button(self, obj):
         """Button in list view to view user's location on map"""
@@ -73,22 +112,61 @@ class UserProfileAdmin(GISModelAdmin):
     view_on_map_link.short_description = 'Map View'
     
     def changelist_view(self, request, extra_context=None):
-        """Add custom button to view all users on map in list view"""
+        """
+        Add custom button to view all users on map in list view
+        Only show for superusers since non-superuser staff only see their own profile
+        """
         extra_context = extra_context or {}
-        extra_context['show_all_on_map_url'] = reverse('map_view')
+        # Only superusers get the "View All Users on Map" button
+        if request.user.is_superuser:
+            extra_context['show_all_on_map_url'] = reverse('map_view')
         return super().changelist_view(request, extra_context=extra_context)
+    
+    def get_readonly_fields(self, request, obj=None):
+        """
+        Make user field readonly for non-superuser staff
+        """
+        readonly = list(self.readonly_fields)
+        if not request.user.is_superuser:
+            readonly.append('user')
+        return readonly
+    
+    def has_module_permission(self, request):
+        """
+        Allow access to module if user is in Staff group or is superuser
+        """
+        if request.user.is_superuser:
+            return True
+        # Check if user is in Staff group or has view permission
+        return (
+            request.user.groups.filter(name='Staff').exists() or
+            request.user.has_perm('app.view_userprofile')
+        )
 
 
 @admin.register(UserActivityLog)
 class UserActivityLogAdmin(admin.ModelAdmin):
     """
     Admin interface for viewing user login/logout activity logs
+    Non-superuser staff can only see their own activity logs
+    Superusers can see all activity logs
     """
     list_display = ['colored_action', 'username', 'user_link', 'timestamp', 'ip_address', 'short_user_agent']
     list_filter = ['action', 'timestamp', 'user']
     search_fields = ['username', 'ip_address', 'user__email']
     readonly_fields = ['user', 'username', 'action', 'timestamp', 'ip_address', 'user_agent', 'session_key']
     date_hierarchy = 'timestamp'
+    
+    def get_queryset(self, request):
+        """
+        Filter queryset based on user permissions
+        Non-superuser staff can only see their own activity logs
+        """
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Non-superuser staff users only see their own logs
+        return qs.filter(user=request.user)
     
     # Prevent adding/editing logs manually
     def has_add_permission(self, request):
@@ -100,6 +178,15 @@ class UserActivityLogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Only superusers can delete logs
         return request.user.is_superuser
+    
+    def has_module_permission(self, request):
+        """
+        Allow access to activity logs if user is in Staff group or is superuser
+        """
+        if request.user.is_superuser:
+            return True
+        # Check if user is in Staff group
+        return request.user.groups.filter(name='Staff').exists()
     
     def colored_action(self, obj):
         """Display action with color coding"""
@@ -156,3 +243,48 @@ class UserActivityLogAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+# Unregister the default User admin and register custom one
+admin.site.unregister(User)
+
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    """
+    Custom User admin that restricts non-superuser staff to only see themselves
+    """
+    
+    def get_queryset(self, request):
+        """
+        Filter queryset based on user permissions
+        Non-superuser staff can only see their own user account
+        """
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # Non-superuser staff users only see themselves
+        return qs.filter(pk=request.user.pk)
+    
+    def has_change_permission(self, request, obj=None):
+        """
+        Non-superuser staff can only change their own account
+        """
+        if request.user.is_superuser:
+            return True
+        if obj is not None and obj != request.user:
+            return False
+        return super().has_change_permission(request, obj)
+    
+    def has_delete_permission(self, request, obj=None):
+        """
+        Only superusers can delete user accounts
+        """
+        return request.user.is_superuser
+    
+    def has_add_permission(self, request):
+        """
+        Only superusers can add users via admin
+        Regular users should use the signup page
+        """
+        return request.user.is_superuser

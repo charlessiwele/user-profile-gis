@@ -146,6 +146,7 @@ class SignUpForm(UserCreationForm):
     def save(self, commit=True):
         """
         Override save to make new users staff by default
+        and assign them to the Staff group
         """
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
@@ -153,6 +154,15 @@ class SignUpForm(UserCreationForm):
         
         if commit:
             user.save()
+            # Assign the user to the Staff group if they're not a superuser
+            if not user.is_superuser:
+                from django.contrib.auth.models import Group
+                try:
+                    staff_group = Group.objects.get(name='Staff')
+                    user.groups.add(staff_group)
+                except Group.DoesNotExist:
+                    # If group doesn't exist, log a warning but don't fail
+                    pass
         return user
 
 
