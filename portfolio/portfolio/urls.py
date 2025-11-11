@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from app.views import UserProfileViewSet, UserViewSet
+from app.views import UserProfileViewSet, UserViewSet, profile_view, profile_edit
 
 # Create a router for REST API endpoints
 router = DefaultRouter()
@@ -28,4 +28,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls')),  # Login/logout for browsable API
+    
+    # Profile pages
+    path('', profile_view, name='profile_view'),  # Default home page
+    path('profile/', profile_view, name='profile_view'),  # Profile view
+    path('profile/edit/', profile_edit, name='profile_edit'),  # Profile edit
+    path('profile/<str:username>/', profile_view, name='profile_view_user'),  # View other user's profile
 ]

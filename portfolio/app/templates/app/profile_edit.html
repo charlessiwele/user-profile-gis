@@ -1,0 +1,229 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Edit Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .form-section {
+        margin-bottom: 30px;
+    }
+    
+    .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #667eea;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .section-title::before {
+        content: '';
+        width: 4px;
+        height: 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s;
+        font-family: inherit;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-control::placeholder {
+        color: #adb5bd;
+    }
+    
+    .help-text {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+        display: block;
+    }
+    
+    .location-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #e9ecef;
+    }
+    
+    .errorlist {
+        list-style: none;
+        margin: 5px 0 0 0;
+        padding: 0;
+    }
+    
+    .errorlist li {
+        color: #dc3545;
+        font-size: 13px;
+        padding: 5px 10px;
+        background: #f8d7da;
+        border-radius: 5px;
+        margin-top: 5px;
+    }
+    
+    .info-box {
+        background: #e7f3ff;
+        border-left: 4px solid #2196F3;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .info-box p {
+        margin: 5px 0;
+        font-size: 14px;
+        color: #0c5460;
+    }
+    
+    @media (max-width: 768px) {
+        .location-fields {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1 class="form-title">Edit Your Profile</h1>
+    
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h2 class="section-title">Personal Information</h2>
+            
+            <div class="form-group">
+                <label class="form-label" for="id_first_name">First Name</label>
+                {{ user_form.first_name }}
+                {% if user_form.first_name.errors %}
+                    {{ user_form.first_name.errors }}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="id_last_name">Last Name</label>
+                {{ user_form.last_name }}
+                {% if user_form.last_name.errors %}
+                    {{ user_form.last_name.errors }}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="id_email">Email Address</label>
+                {{ user_form.email }}
+                {% if user_form.email.errors %}
+                    {{ user_form.email.errors }}
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h2 class="section-title">Contact Information</h2>
+            
+            <div class="form-group">
+                <label class="form-label" for="id_phone_number">Phone Number</label>
+                {{ profile_form.phone_number }}
+                {% if profile_form.phone_number.errors %}
+                    {{ profile_form.phone_number.errors }}
+                {% endif %}
+                <small class="help-text">{{ profile_form.phone_number.help_text }}</small>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="id_home_address">Home Address</label>
+                {{ profile_form.home_address }}
+                {% if profile_form.home_address.errors %}
+                    {{ profile_form.home_address.errors }}
+                {% endif %}
+                <small class="help-text">{{ profile_form.home_address.help_text }}</small>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h2 class="section-title">Geographic Location</h2>
+            
+            <div class="info-box">
+                <p><strong>📍 Set Your Location</strong></p>
+                <p>Enter your geographic coordinates (latitude and longitude). You can find these using Google Maps or any GPS service.</p>
+            </div>
+            
+            <div class="location-fields">
+                <div class="form-group">
+                    <label class="form-label" for="id_latitude">Latitude</label>
+                    {{ profile_form.latitude }}
+                    {% if profile_form.latitude.errors %}
+                        {{ profile_form.latitude.errors }}
+                    {% endif %}
+                    <small class="help-text">{{ profile_form.latitude.help_text }}</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="id_longitude">Longitude</label>
+                    {{ profile_form.longitude }}
+                    {% if profile_form.longitude.errors %}
+                        {{ profile_form.longitude.errors }}
+                    {% endif %}
+                    <small class="help-text">{{ profile_form.longitude.help_text }}</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{% url 'profile_view' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

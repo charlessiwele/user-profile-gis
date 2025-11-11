@@ -1,0 +1,210 @@
+{% extends 'app/base.html' %}
+
+{% block title %}{{ profile_user.username }}'s Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 48px;
+        margin: 0 auto 20px;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .profile-username {
+        font-size: 32px;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .profile-email {
+        color: #6c757d;
+        font-size: 16px;
+    }
+    
+    .profile-section {
+        margin-bottom: 30px;
+    }
+    
+    .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #667eea;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .section-title::before {
+        content: '';
+        width: 4px;
+        height: 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2px;
+    }
+    
+    .profile-info {
+        display: grid;
+        gap: 15px;
+    }
+    
+    .info-item {
+        display: flex;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        transition: all 0.3s;
+    }
+    
+    .info-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        min-width: 140px;
+    }
+    
+    .info-value {
+        color: #333;
+        flex: 1;
+    }
+    
+    .info-value.empty {
+        color: #adb5bd;
+        font-style: italic;
+    }
+    
+    .actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    
+    .map-preview {
+        margin-top: 10px;
+        border-radius: 10px;
+        overflow: hidden;
+        height: 200px;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6c757d;
+    }
+    
+    .location-coords {
+        font-size: 14px;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="profile-header">
+        <div class="profile-avatar">{{ profile_user.username.0|upper }}</div>
+        <h1 class="profile-username">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+        <p class="profile-email">@{{ profile_user.username }}</p>
+    </div>
+    
+    <div class="profile-section">
+        <h2 class="section-title">Personal Information</h2>
+        <div class="profile-info">
+            <div class="info-item">
+                <span class="info-label">First Name:</span>
+                <span class="info-value {% if not profile_user.first_name %}empty{% endif %}">
+                    {{ profile_user.first_name|default:"Not provided" }}
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Last Name:</span>
+                <span class="info-value {% if not profile_user.last_name %}empty{% endif %}">
+                    {{ profile_user.last_name|default:"Not provided" }}
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Email:</span>
+                <span class="info-value {% if not profile_user.email %}empty{% endif %}">
+                    {{ profile_user.email|default:"Not provided" }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="profile-section">
+        <h2 class="section-title">Contact Information</h2>
+        <div class="profile-info">
+            <div class="info-item">
+                <span class="info-label">Phone Number:</span>
+                <span class="info-value {% if not profile.phone_number %}empty{% endif %}">
+                    {{ profile.phone_number|default:"Not provided" }}
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Home Address:</span>
+                <span class="info-value {% if not profile.home_address %}empty{% endif %}">
+                    {{ profile.home_address|default:"Not provided" }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="profile-section">
+        <h2 class="section-title">Location</h2>
+        <div class="profile-info">
+            <div class="info-item">
+                <span class="info-label">Geographic Location:</span>
+                <div class="info-value">
+                    {% if profile.location %}
+                        <div>
+                            <strong>📍 Location Set</strong>
+                            <div class="location-coords">
+                                Latitude: {{ profile.location.y|floatformat:6 }}, 
+                                Longitude: {{ profile.location.x|floatformat:6 }}
+                            </div>
+                        </div>
+                    {% else %}
+                        <span class="empty">Location not set</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if is_own_profile %}
+    <div class="actions">
+        <a href="{% url 'profile_edit' %}" class="btn btn-primary">Edit Profile</a>
+    </div>
+    {% endif %}
+    
+    <div class="profile-section" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e9ecef;">
+        <div style="text-align: center; color: #6c757d; font-size: 14px;">
+            <p>Profile created: {{ profile.created_at|date:"F d, Y" }}</p>
+            <p>Last updated: {{ profile.updated_at|date:"F d, Y" }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
