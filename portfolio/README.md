@@ -64,7 +64,7 @@ This application uses **GeoDjango**, which requires **GDAL** (Geospatial Data Ab
 - macOS: Homebrew dependencies, linking issues
 
 ❌ **Time-Consuming Setup**
-- Can take 30-60 minutes to resolve all dependencies
+- Can take 30-60 minutes to resolve all dependencies (trust me I've tried)
 - Debugging cryptic error messages
 - Environment conflicts with other projects
 
@@ -72,7 +72,7 @@ This application uses **GeoDjango**, which requires **GDAL** (Geospatial Data Ab
 
 ✅ **Zero Local Dependencies**
 - No need to install GDAL, C++ compilers, or system libraries
-- Everything pre-configured in the Docker image
+- Everything is pre-configured in the Docker image
 - Works identically on Windows, Mac, and Linux
 
 ✅ **5-Minute Setup**
@@ -161,7 +161,10 @@ docker-compose exec web python manage.py createsuperuser
 | http://localhost:8000/map/ | Interactive Map View |
 
 **First login:**
-1. Go to http://localhost:8000/admin/login/
+1. YOu've got two options for login:
+- Go to http://localhost:8000/admin/login/
+OR
+- Go to http://localhost:8000/signin/
 2. Enter your superuser credentials
 3. You'll be redirected to your profile page
 
@@ -177,7 +180,7 @@ docker-compose down -v
 
 ---
 
-## ⚡ Common Docker Commands
+## ⚡ Common Docker Commands that were useful during development and testing:
 
 ```bash
 # View application logs
@@ -240,11 +243,12 @@ docker-compose build --no-cache
 - Browsable API interface
 
 ### 👥 4. Role-Based Access Control
-- **Regular Users**: View/edit own profile only
-- **Staff Users**: Admin access with configurable permissions
+- **Two User Levels**: Staff Users and Superusers (all registered users are staff)
+- **Staff Users**: Can view/edit own profile only (via admin or web interface)
 - **Superusers**: Full access to all profiles and admin features
 - View-level permission enforcement
 - API-level permission checks
+- Group-based permissions using Django's Groups system
 
 ### 📊 5. Activity Logging
 - Automatic login/logout tracking
@@ -366,47 +370,80 @@ portfolio/
 
 ## 👥 User Roles & Permissions
 
-The application implements three levels of user access:
+The application implements **two levels of user access**:
 
-### Regular User
-- ✅ View and edit own profile
+> **Note**: All users who register via `/signup/` are automatically created as **Staff Users**. There are no "regular users" - everyone has staff access by default.
+
+### Staff User (Default for All Registered Users)
+- ✅ View and edit **own profile only** (via web interface or admin)
 - ✅ View own location on map
-- ✅ Access REST API for own data
-- ❌ Cannot view other users' profiles
-- ❌ Cannot access Django admin
-- ❌ Cannot view activity logs
-
-### Staff User
-- ✅ All Regular User permissions
 - ✅ Access Django admin interface
-- ✅ View models if permissions granted
-- ❌ Cannot view other users' profiles (web interface)
-- ❌ No model permissions by default
+- ✅ Access REST API for **own data only**
+- ✅ View own activity logs in admin
+- ✅ Member of "Staff" group with UserProfile view/edit permissions
+- ❌ **Cannot** view other users' profiles
+- ❌ **Cannot** view all users on map
+- ❌ **Cannot** access all data via API
+- ❌ **Cannot** delete any records
+- ❌ **Cannot** manage users, groups, or permissions
 
-### Superuser ⭐
-- ✅ All permissions
-- ✅ View any user's profile
-- ✅ Access all Django admin models
-- ✅ View all users on map
-- ✅ Access all data via API
-- ✅ View and manage activity logs
-- ✅ Delete activity logs
+**Created by:** Signing up at `/signup/` or via Django shell
+
+### Superuser ⭐ (Administrator)
+- ✅ **Full access** to everything
+- ✅ View and edit **any user's profile**
+- ✅ Access **all Django admin models**
+- ✅ View **all users on map**
+- ✅ Access **all data via API**
+- ✅ View and manage **all activity logs**
+- ✅ Delete any records
+- ✅ Manage users, groups, and permissions
+- ✅ Bypass all permission restrictions
+
+**Created by:** `python manage.py createsuperuser` command
 
 ### Permission Matrix
 
-| Feature | Regular | Staff | Superuser |
-|---------|---------|-------|-----------|
-| View own profile | ✅ | ✅ | ✅ |
-| Edit own profile | ✅ | ✅ | ✅ |
-| View other profiles | ❌ | ❌ | ✅ |
-| Access admin | ❌ | ✅ | ✅ |
-| Manage profiles (admin) | ❌ | ❌* | ✅ |
-| View all on map | ❌ | ❌ | ✅ |
-| View activity logs | ❌ | ❌* | ✅ |
-| API: Own data | ✅ | ✅ | ✅ |
-| API: All data | ❌ | ❌ | ✅ |
+| Feature | Staff User | Superuser |
+|---------|------------|-----------|
+| **Web Interface** | | |
+| View own profile | ✅ | ✅ |
+| Edit own profile | ✅ | ✅ |
+| View other profiles | ❌ | ✅ |
+| **Admin Panel** | | |
+| Access /admin/ | ✅ | ✅ |
+| View own UserProfile | ✅ | ✅ |
+| View all UserProfiles | ❌ | ✅ |
+| Edit own UserProfile | ✅ | ✅ |
+| Edit any UserProfile | ❌ | ✅ |
+| Delete profiles | ❌ | ✅ |
+| View own User account | ✅ | ✅ |
+| View all Users | ❌ | ✅ |
+| Manage groups/permissions | ❌ | ✅ |
+| **Maps** | | |
+| View own location | ✅ | ✅ |
+| View all users on map | ❌ | ✅ |
+| **Activity Logs** | | |
+| View own logs | ✅ | ✅ |
+| View all logs | ❌ | ✅ |
+| Delete logs | ❌ | ✅ |
+| **REST API** | | |
+| Access own data | ✅ | ✅ |
+| Access all data | ❌ | ✅ |
 
-*Staff users need explicit permissions granted by superuser
+### Technical Implementation
+
+**Staff Users** (`is_staff=True`, `is_superuser=False`):
+- Automatically assigned to "Staff" Django Group on registration
+- Group has `view_userprofile` and `change_userprofile` permissions
+- Custom admin methods filter querysets to show only own data
+- Cannot create accounts via admin (must use signup page)
+
+**Superusers** (`is_superuser=True`):
+- Created via `createsuperuser` command
+- Automatically have all permissions
+- Not in any groups (don't need them)
+- Can create/edit/delete any records
 
 ---
 
@@ -476,8 +513,8 @@ The application implements three levels of user access:
 
 | URL | What It Shows |
 |-----|---------------|
-| `/map/` | All users (superuser) or own location (regular user) |
-| `/map/?user_id=1` | Specific user's location |
+| `/map/` | All users (superuser) or own location (staff user) |
+| `/map/?user_id=1` | Specific user's location (superuser only) |
 
 ### 3. REST API
 
@@ -766,23 +803,30 @@ docker-compose up --build
 
 ### Application Issues
 
-#### Permission Denied / Can't Access Admin
+#### Permission Denied / Can't Access Admin or Other Profiles
 
-**Problem:** Regular users can't access admin or other profiles
+**Problem:** Staff users can't access admin or other profiles
 
 **Expected behavior:**
-- Admin access requires `is_staff=True`
-- Viewing all profiles requires `is_superuser=True`
-- Regular users can only see their own profile
+- All registered users have `is_staff=True` (admin access)
+- Staff users can only see their **own** profile (not others)
+- Viewing **all** profiles requires `is_superuser=True`
 
 **Check user permissions:**
 ```bash
 docker-compose exec web python manage.py shell
 ```
 ```python
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
+
 user = User.objects.get(username='your_username')
-print(f"Staff: {user.is_staff}, Super: {user.is_superuser}")
+print(f"Staff: {user.is_staff}, Superuser: {user.is_superuser}")
+print(f"Groups: {[g.name for g in user.groups.all()]}")
+
+# All registered users should have:
+# - is_staff=True
+# - is_superuser=False (unless created as superuser)
+# - Be in the "Staff" group
 ```
 
 #### Map Not Loading
@@ -1000,30 +1044,44 @@ python manage.py test app.tests.UserProfileTestCase.test_profile_created_automat
 
 ### Creating New Users
 
-**Via Admin Interface:**
-1. Admin → Users → Add User
-2. Set username and password
-3. Save and continue editing
-4. Set email, name, permissions
+**Via Signup Page (Recommended for Staff Users):**
+1. Go to: http://localhost:8000/signup/
+2. Fill in username, email, password
+3. Automatically created with `is_staff=True`
+4. Automatically added to "Staff" group
 5. Profile automatically created via signal
 
-**Via Command Line:**
+**Via Admin Interface (Superuser Only):**
+1. Login as superuser
+2. Admin → Users → Add User
+3. Set username and password
+4. Save and continue editing
+5. Set email, name, permissions, and staff/superuser flags
+6. Profile automatically created via signal
+
+**Via Command Line (For Superusers):**
 ```bash
+# In Docker:
+docker-compose exec web python manage.py createsuperuser
+
+# Or locally:
 python manage.py createsuperuser
 ```
 
 **Via Django Shell:**
 ```python
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 
-# Regular user
-user = User.objects.create_user('username', 'email@example.com', 'password')
+# Staff user (same as signup page creates)
+staff = User.objects.create_user('staffuser', 'staff@example.com', 'password', is_staff=True)
+staff_group = Group.objects.get(name='Staff')
+staff.groups.add(staff_group)
 
-# Staff user
-staff = User.objects.create_user('staff', 'staff@example.com', 'password', is_staff=True)
-
-# Superuser
+# Superuser (administrator)
 admin = User.objects.create_superuser('admin', 'admin@example.com', 'password')
+
+# Note: All users registered via /signup/ are automatically staff users
+# There are only two user levels: Staff and Superuser
 ```
 
 ### Database Management
@@ -1158,7 +1216,7 @@ A production-ready Django application demonstrating:
 ✅ **Geographic Location Tracking** - Point geometry with lat/lng coordinates  
 ✅ **Interactive Maps** - Full-screen Leaflet.js maps with custom markers  
 ✅ **RESTful API** - Complete CRUD operations with Django REST Framework  
-✅ **Role-Based Access Control** - Three user levels with different permissions  
+✅ **Role-Based Access Control** - Two user levels (Staff and Superuser) with group-based permissions  
 ✅ **Activity Logging** - Automatic login/logout/failed attempt tracking  
 ✅ **Modern UI** - Responsive gradient design with mobile support  
 ✅ **Enhanced Admin** - GIS widgets, map integration, custom actions  

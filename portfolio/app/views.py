@@ -21,9 +21,10 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Filter to show only the authenticated user's profile for non-staff users
+        Filter to show only the authenticated user's profile for non-superusers
+        Staff users (non-superuser) can only see their own profile
         """
-        if self.request.user.is_staff:
+        if self.request.user.is_superuser:
             return UserProfile.objects.all()
         return UserProfile.objects.filter(user=self.request.user)
 
@@ -39,9 +40,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """
-        Filter to show only the authenticated user for non-staff users
+        Filter to show only the authenticated user for non-superusers
+        Staff users (non-superuser) can only see themselves
         """
-        if self.request.user.is_staff:
+        if self.request.user.is_superuser:
             return User.objects.all()
         return User.objects.filter(id=self.request.user.id)
 
@@ -154,7 +156,7 @@ def user_locations_geojson(request):
             ).select_related('user')
         except (ValueError, TypeError):
             # Invalid user_id, show based on user permissions
-            if request.user.is_staff:
+            if request.user.is_superuser:
                 profiles = UserProfile.objects.filter(
                     location__isnull=False
                 ).select_related('user')
@@ -164,8 +166,8 @@ def user_locations_geojson(request):
                     location__isnull=False
                 ).select_related('user')
     else:
-        # Show all users with locations (for staff) or just the current user (for regular users)
-        if request.user.is_staff:
+        # Show all users with locations (for superuser) or just the current user (for staff)
+        if request.user.is_superuser:
             profiles = UserProfile.objects.filter(
                 location__isnull=False
             ).select_related('user')

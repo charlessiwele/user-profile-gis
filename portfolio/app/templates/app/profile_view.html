@@ -148,10 +148,8 @@
                 <span class="info-value">
                     {% if profile_user.is_superuser %}
                         <strong style="color: #667eea;">⭐ Superuser</strong> - Full access to all profiles and admin features
-                    {% elif profile_user.is_staff %}
-                        <strong style="color: #28a745;">Staff</strong> - Access to admin interface
                     {% else %}
-                        <strong>Regular User</strong> - Access to your own profile only
+                        <strong style="color: #28a745;">Staff User</strong> - Can view/edit own profile in admin
                     {% endif %}
                 </span>
             </div>
