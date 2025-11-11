@@ -122,8 +122,12 @@ def map_view(request):
     """
     user_id = request.GET.get('user_id')
     
+    # Convert 'None' string or empty values to actual None
+    if user_id in ['None', '', None]:
+        user_id = None
+    
     context = {
-        'user_id': user_id,
+        'user_id': user_id or '',  # Pass empty string instead of None to avoid 'None' in JS
         'show_all': user_id is None,
     }
     
@@ -139,11 +143,25 @@ def user_locations_geojson(request):
     user_id = request.GET.get('user_id')
     
     # Filter profiles based on user_id parameter
-    if user_id:
-        profiles = UserProfile.objects.filter(
-            user_id=user_id,
-            location__isnull=False
-        ).select_related('user')
+    # Handle case where user_id might be 'None' string or empty
+    if user_id and user_id != 'None' and user_id.strip():
+        try:
+            user_id = int(user_id)
+            profiles = UserProfile.objects.filter(
+                user_id=user_id,
+                location__isnull=False
+            ).select_related('user')
+        except (ValueError, TypeError):
+            # Invalid user_id, show based on user permissions
+            if request.user.is_staff:
+                profiles = UserProfile.objects.filter(
+                    location__isnull=False
+                ).select_related('user')
+            else:
+                profiles = UserProfile.objects.filter(
+                    user=request.user,
+                    location__isnull=False
+                ).select_related('user')
     else:
         # Show all users with locations (for staff) or just the current user (for regular users)
         if request.user.is_staff:
