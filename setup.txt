@@ -1,0 +1,8 @@
+1. Create a python Django project "portfolio"
+- python -m venv venv
+- pip install djangorestframework (also installs django)
+- django-admin startproject portfolio
+- cd portfolio
+- python manage.py startapp app
+- python manage.py makemigrations
+- python manage.py migrate
