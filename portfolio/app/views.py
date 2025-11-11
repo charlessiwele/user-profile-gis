@@ -51,10 +51,20 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 def profile_view(request, username=None):
     """
     Display user profile page
+    Users can only view their own profile unless they are superuser
     """
     if username:
         # View another user's profile
         user = get_object_or_404(User, username=username)
+        
+        # Permission check: only superusers can view other users' profiles
+        if request.user != user and not request.user.is_superuser:
+            messages.error(
+                request, 
+                'You do not have permission to view other users\' profiles. '
+                'Only superusers can view all profiles.'
+            )
+            return redirect('profile_view')  # Redirect to their own profile
     else:
         # View own profile
         user = request.user

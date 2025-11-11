@@ -169,11 +169,14 @@
                 {% if user.is_authenticated %}
                     <div class="user-info">
                         <div class="user-avatar">{{ user.username.0|upper }}</div>
-                        <span>{{ user.username }}</span>
+                        <span>{{ user.username }}{% if user.is_superuser %} ⭐{% endif %}</span>
                     </div>
                     <a href="{% url 'profile_view' %}">My Profile</a>
+                    {% if user.is_staff %}
                     <a href="{% url 'admin:index' %}">Admin</a>
+                    {% endif %}
                     <a href="/api/">API</a>
+                    <a href="/admin/logout/" style="color: #dc3545;">Logout</a>
                 {% else %}
                     <a href="{% url 'admin:index' %}">Login</a>
                 {% endif %}

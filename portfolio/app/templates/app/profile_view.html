@@ -125,9 +125,43 @@
 <div class="card">
     <div class="profile-header">
         <div class="profile-avatar">{{ profile_user.username.0|upper }}</div>
-        <h1 class="profile-username">{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+        <h1 class="profile-username">
+            {{ profile_user.get_full_name|default:profile_user.username }}
+            {% if profile_user.is_superuser %}<span style="font-size: 24px; margin-left: 10px;">⭐</span>{% endif %}
+        </h1>
         <p class="profile-email">@{{ profile_user.username }}</p>
+        {% if not is_own_profile %}
+        <p style="margin-top: 10px; color: #667eea; font-weight: 600;">
+            <span style="background: #e7f3ff; padding: 5px 15px; border-radius: 20px;">
+                Viewing as Superuser
+            </span>
+        </p>
+        {% endif %}
     </div>
+    
+    {% if is_own_profile %}
+    <div class="profile-section">
+        <h2 class="section-title">Account Information</h2>
+        <div class="profile-info">
+            <div class="info-item">
+                <span class="info-label">Account Type:</span>
+                <span class="info-value">
+                    {% if profile_user.is_superuser %}
+                        <strong style="color: #667eea;">⭐ Superuser</strong> - Full access to all profiles and admin features
+                    {% elif profile_user.is_staff %}
+                        <strong style="color: #28a745;">Staff</strong> - Access to admin interface
+                    {% else %}
+                        <strong>Regular User</strong> - Access to your own profile only
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Date Joined:</span>
+                <span class="info-value">{{ profile_user.date_joined|date:"F d, Y" }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
     <div class="profile-section">
         <h2 class="section-title">Personal Information</h2>
