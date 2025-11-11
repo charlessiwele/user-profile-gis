@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Locations Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .map-header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .map-header h1 {
+            font-size: 20px;
+            color: #333;
+            margin: 0;
+        }
+        
+        .back-button {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        .leaflet-popup-content-wrapper {
+            border-radius: 10px;
+        }
+        
+        .popup-content {
+            padding: 10px;
+        }
+        
+        .popup-content h3 {
+            color: #667eea;
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        
+        .popup-content p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .popup-content strong {
+            color: #495057;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            font-size: 18px;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .loading-overlay.hidden {
+            display: none;
+        }
+        
+        .info-box {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-width: 250px;
+        }
+        
+        .info-box h4 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+            font-size: 16px;
+        }
+        
+        .info-box p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .marker-count {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading">
+        Loading map...
+    </div>
+    
+    <div class="map-header">
+        <h1>📍 {% if user_id %}User Location{% else %}All User Locations{% endif %}</h1>
+        <a href="{% url 'profile_view' %}" class="back-button">← Back to Profile</a>
+    </div>
+    
+    <div class="info-box">
+        <h4>Map Info</h4>
+        <p>Markers: <span class="marker-count" id="markerCount">0</span></p>
+        <p>{% if user_id %}Showing location for selected user{% else %}Showing all registered users{% endif %}</p>
+    </div>
+    
+    <div id="map"></div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([0, 0], 2);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+        }).addTo(map);
+        
+        // Custom icon for markers
+        const userIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+        });
+        
+        // Fetch and display user locations
+        const userId = '{{ user_id|escapejs }}';
+        const url = userId ? `/map/api/locations/?user_id=${userId}` : '/map/api/locations/';
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading overlay
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (data.features.length === 0) {
+                    alert('No user locations found on the map.');
+                    return;
+                }
+                
+                // Update marker count
+                document.getElementById('markerCount').textContent = data.features.length;
+                
+                // Create a bounds object to fit all markers
+                const bounds = L.latLngBounds();
+                
+                // Add markers to map
+                data.features.forEach(feature => {
+                    const [lng, lat] = feature.geometry.coordinates;
+                    const props = feature.properties;
+                    
+                    // Create popup content
+                    const popupContent = `
+                        <div class="popup-content">
+                            <h3>${props.full_name}</h3>
+                            <p><strong>Username:</strong> ${props.username}</p>
+                            <p><strong>Email:</strong> ${props.email}</p>
+                            <p><strong>Phone:</strong> ${props.phone_number}</p>
+                            <p><strong>Address:</strong> ${props.home_address}</p>
+                            <p><strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+                        </div>
+                    `;
+                    
+                    // Add marker
+                    const marker = L.marker([lat, lng], { icon: userIcon })
+                        .addTo(map)
+                        .bindPopup(popupContent);
+                    
+                    // Extend bounds
+                    bounds.extend([lat, lng]);
+                    
+                    // Open popup for single user view
+                    if (data.features.length === 1) {
+                        marker.openPopup();
+                    }
+                });
+                
+                // Fit map to show all markers
+                if (data.features.length === 1) {
+                    // For single marker, center and zoom
+                    const [lng, lat] = data.features[0].geometry.coordinates;
+                    map.setView([lat, lng], 13);
+                } else {
+                    // For multiple markers, fit bounds with padding
+                    map.fitBounds(bounds, { padding: [50, 50] });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading locations:', error);
+                document.getElementById('loading').innerHTML = 'Error loading map data. Please try again.';
+                setTimeout(() => {
+                    document.getElementById('loading').classList.add('hidden');
+                }, 2000);
+            });
+    </script>
+</body>
+</html>
+

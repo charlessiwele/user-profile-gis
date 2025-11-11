@@ -17,7 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from app.views import UserProfileViewSet, UserViewSet, profile_view, profile_edit
+from app.views import (
+    UserProfileViewSet, UserViewSet, profile_view, profile_edit,
+    map_view, user_locations_geojson
+)
 
 # Create a router for REST API endpoints
 router = DefaultRouter()
@@ -34,4 +37,8 @@ urlpatterns = [
     path('profile/', profile_view, name='profile_view'),  # Profile view
     path('profile/edit/', profile_edit, name='profile_edit'),  # Profile edit
     path('profile/<str:username>/', profile_view, name='profile_view_user'),  # View other user's profile
+    
+    # Map pages
+    path('map/', map_view, name='map_view'),  # Full-screen map view
+    path('map/api/locations/', user_locations_geojson, name='user_locations_geojson'),  # GeoJSON API
 ]

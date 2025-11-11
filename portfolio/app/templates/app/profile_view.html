@@ -196,6 +196,9 @@
     {% if is_own_profile %}
     <div class="actions">
         <a href="{% url 'profile_edit' %}" class="btn btn-primary">Edit Profile</a>
+        {% if profile.location %}
+        <a href="{% url 'map_view' %}?user_id={{ profile_user.id }}" class="btn btn-secondary">📍 View on Map</a>
+        {% endif %}
     </div>
     {% endif %}
     

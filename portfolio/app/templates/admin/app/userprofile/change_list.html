@@ -1,0 +1,21 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    {% if show_all_on_map_url %}
+    <li>
+        <a href="{{ show_all_on_map_url }}" target="_blank" class="viewlink" style="
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+        ">
+            📍 View All Users on Map
+        </a>
+    </li>
+    {% endif %}
+{% endblock %}
+

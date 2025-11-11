@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
 from rest_framework import viewsets, permissions
 from django.contrib.auth.models import User
 from .models import UserProfile
@@ -101,3 +102,74 @@ def profile_edit(request):
     }
     
     return render(request, 'app/profile_edit.html', context)
+
+
+@login_required
+def map_view(request):
+    """
+    Full-screen map view for displaying user locations
+    Supports filtering by user_id parameter
+    """
+    user_id = request.GET.get('user_id')
+    
+    context = {
+        'user_id': user_id,
+        'show_all': user_id is None,
+    }
+    
+    return render(request, 'app/map_view.html', context)
+
+
+@login_required
+def user_locations_geojson(request):
+    """
+    API endpoint that returns user locations in GeoJSON format
+    Supports filtering by user_id parameter
+    """
+    user_id = request.GET.get('user_id')
+    
+    # Filter profiles based on user_id parameter
+    if user_id:
+        profiles = UserProfile.objects.filter(
+            user_id=user_id,
+            location__isnull=False
+        ).select_related('user')
+    else:
+        # Show all users with locations (for staff) or just the current user (for regular users)
+        if request.user.is_staff:
+            profiles = UserProfile.objects.filter(
+                location__isnull=False
+            ).select_related('user')
+        else:
+            profiles = UserProfile.objects.filter(
+                user=request.user,
+                location__isnull=False
+            ).select_related('user')
+    
+    # Build GeoJSON FeatureCollection
+    features = []
+    for profile in profiles:
+        if profile.location:
+            feature = {
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [profile.location.x, profile.location.y]  # [longitude, latitude]
+                },
+                'properties': {
+                    'username': profile.user.username,
+                    'full_name': profile.user.get_full_name() or profile.user.username,
+                    'email': profile.user.email,
+                    'phone_number': profile.phone_number or 'Not provided',
+                    'home_address': profile.home_address or 'Not provided',
+                    'user_id': profile.user.id,
+                }
+            }
+            features.append(feature)
+    
+    geojson = {
+        'type': 'FeatureCollection',
+        'features': features
+    }
+    
+    return JsonResponse(geojson)
