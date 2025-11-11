@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, authenticate
 from django.contrib import messages
 from django.http import JsonResponse
 from rest_framework import viewsets, permissions
 from django.contrib.auth.models import User
 from .models import UserProfile
 from .serializers import UserSerializer, UserProfileSerializer
-from .forms import UserForm, UserProfileForm
+from .forms import UserForm, UserProfileForm, SignUpForm, SignInForm
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -201,3 +202,50 @@ def user_locations_geojson(request):
     }
     
     return JsonResponse(geojson)
+
+
+def signup_view(request):
+    """
+    User registration view
+    Creates new users as staff by default
+    """
+    if request.user.is_authenticated:
+        return redirect('profile_view')
+    
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Log the user in automatically after registration
+            login(request, user)
+            messages.success(request, f'Welcome {user.username}! Your account has been created successfully.')
+            return redirect('profile_view')
+    else:
+        form = SignUpForm()
+    
+    return render(request, 'app/signup.html', {'form': form})
+
+
+def signin_view(request):
+    """
+    User login view
+    """
+    if request.user.is_authenticated:
+        return redirect('profile_view')
+    
+    if request.method == 'POST':
+        form = SignInForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Welcome back, {user.username}!')
+                # Redirect to next parameter or profile
+                next_url = request.GET.get('next', 'profile_view')
+                return redirect(next_url)
+    else:
+        form = SignInForm()
+    
+    return render(request, 'app/signin.html', {'form': form})

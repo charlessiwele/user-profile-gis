@@ -19,7 +19,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from app.views import (
     UserProfileViewSet, UserViewSet, profile_view, profile_edit,
-    map_view, user_locations_geojson
+    map_view, user_locations_geojson, signup_view, signin_view
 )
 
 # Create a router for REST API endpoints
@@ -31,6 +31,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api-auth/', include('rest_framework.urls')),  # Login/logout for browsable API
+    
+    # Authentication pages
+    path('signup/', signup_view, name='signup'),  # User registration
+    path('signin/', signin_view, name='signin'),  # User login
     
     # Profile pages
     path('', profile_view, name='profile_view'),  # Default home page

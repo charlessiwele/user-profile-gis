@@ -188,7 +188,8 @@
                         </button>
                     </form>
                 {% else %}
-                    <a href="{% url 'admin:index' %}">Login</a>
+                    <a href="{% url 'signin' %}" style="color: #667eea;">Sign In</a>
+                    <a href="{% url 'signup' %}" class="btn btn-primary" style="padding: 8px 20px; font-size: 14px;">Sign Up</a>
                 {% endif %}
             </div>
         </nav>

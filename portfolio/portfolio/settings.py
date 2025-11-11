@@ -130,7 +130,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = 'profile_view'
 
 # Redirect to login page after logout
-LOGOUT_REDIRECT_URL = '/admin/login/'
+LOGOUT_REDIRECT_URL = 'signin'
 
 # Login URL for @login_required decorator
-LOGIN_URL = '/admin/login/'
+LOGIN_URL = 'signin'
