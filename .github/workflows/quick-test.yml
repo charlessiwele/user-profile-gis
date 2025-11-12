@@ -26,12 +26,17 @@ jobs:
           gdal-bin \
           libgdal-dev \
           libspatialite-dev \
+          libspatialite7 \
           spatialite-bin
 
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r portfolio/requirements.txt
+
+    - name: Set SpatiaLite library path
+      run: |
+        echo "SPATIALITE_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/mod_spatialite.so" >> $GITHUB_ENV
 
     - name: Run Django checks
       working-directory: ./portfolio
