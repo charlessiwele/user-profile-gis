@@ -429,3 +429,70 @@ class UserViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['profile']['phone_number'], '1234567890')
         self.assertEqual(response.data['profile']['home_address'], '123 Test Street')
+
+
+class UserProfileModelTestCase(TestCase):
+    """
+    Test cases for UserProfile model
+    """
+    
+    def setUp(self):
+        """
+        Set up test user
+        """
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@test.com',
+            password='testpass123'
+        )
+    
+    def test_profile_created_on_user_creation(self):
+        """
+        Test that profile is automatically created when user is created
+        """
+        self.assertTrue(hasattr(self.user, 'profile'))
+        self.assertIsInstance(self.user.profile, UserProfile)
+    
+    def test_profile_str_method(self):
+        """
+        Test the string representation of UserProfile
+        """
+        expected_str = f"{self.user.username}'s profile"
+        self.assertEqual(str(self.user.profile), expected_str)
+    
+    def test_profile_default_values(self):
+        """
+        Test that profile fields have correct default values
+        """
+        profile = self.user.profile
+        self.assertIsNone(profile.home_address)
+        self.assertIsNone(profile.phone_number)
+        self.assertIsNone(profile.location)
+        self.assertIsNotNone(profile.created_at)
+        self.assertIsNotNone(profile.updated_at)
+    
+    def test_profile_location_field(self):
+        """
+        Test setting and retrieving geographic location
+        """
+        profile = self.user.profile
+        test_location = Point(-122.4194, 37.7749)  # San Francisco
+        profile.location = test_location
+        profile.save()
+        
+        # Refresh from database
+        profile.refresh_from_db()
+        
+        self.assertIsNotNone(profile.location)
+        self.assertAlmostEqual(profile.location.x, -122.4194, places=4)
+        self.assertAlmostEqual(profile.location.y, 37.7749, places=4)
+    
+    def test_profile_cascade_delete(self):
+        """
+        Test that profile is deleted when user is deleted
+        """
+        profile_id = self.user.profile.id
+        self.user.delete()
+        
+        with self.assertRaises(UserProfile.DoesNotExist):
+            UserProfile.objects.get(id=profile_id)

@@ -1,5 +1,6 @@
 Django==5.2.8
 djangorestframework==3.16.1
+djangorestframework-gis==1.0
 gunicorn==23.0.0
 # GDAL will be installed separately to match system version
 
