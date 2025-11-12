@@ -26,6 +26,7 @@ jobs:
           gdal-bin \
           libgdal-dev \
           libspatialite-dev \
+          libsqlite3-mod-spatialite \
           spatialite-bin
 
     - name: Install Python dependencies
@@ -35,10 +36,7 @@ jobs:
 
     - name: Find and set SpatiaLite library path
       run: |
-        SPATIALITE_PATH=$(find /usr/lib -name "mod_spatialite.so*" 2>/dev/null | head -n 1)
-        if [ -z "$SPATIALITE_PATH" ]; then
-          SPATIALITE_PATH=$(find /usr/lib -name "libspatialite.so*" 2>/dev/null | head -n 1)
-        fi
+        SPATIALITE_PATH=$(find /usr/lib -name "mod_spatialite.so" 2>/dev/null | head -n 1)
         echo "Found SpatiaLite library at: $SPATIALITE_PATH"
         echo "SPATIALITE_LIBRARY_PATH=$SPATIALITE_PATH" >> $GITHUB_ENV
 
