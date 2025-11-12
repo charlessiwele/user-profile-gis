@@ -1,5 +1,10 @@
 # Portfolio Application - Django User Profile System
 
+![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
+![Django 5.2](https://img.shields.io/badge/django-5.2-green)
+![GeoDjango](https://img.shields.io/badge/GeoDjango-enabled-brightgreen)
+![Docker](https://img.shields.io/badge/docker-ready-blue)
+
 A comprehensive Django-based portfolio application with extended user profiles, geographic location tracking, interactive maps, role-based access control, and activity logging. **Containerized with Docker for hassle-free setup.**
 
 ## 📋 Table of Contents
@@ -14,6 +19,7 @@ A comprehensive Django-based portfolio application with extended user profiles, 
 - [API Documentation](#api-documentation)
 - [Admin Interface](#admin-interface)
 - [Activity Logging](#activity-logging)
+- [CI/CD with GitHub Actions](#cicd-with-github-actions)
 - [Development](#development)
 - [Advanced Setup (Local Installation)](#advanced-setup-local-installation)
 - [Troubleshooting](#troubleshooting)
@@ -22,7 +28,8 @@ A comprehensive Django-based portfolio application with extended user profiles, 
 
 ## 🎯 Overview
 
-This Django application provides user profile management with geographic capabilities. It is designed to demonstrate modern web development practices including:
+This Django project let you view and manage user profiles. It also includes some neat geographic capabilities.
+The project is designed to demonstrate modern web development practices and features including:
 
 - Extended user profiles with custom fields
 - Geographic location tracking using GeoDjango
@@ -1021,6 +1028,178 @@ After setting up locally, you might encounter:
 - Time spent debugging instead of developing
 
 **Docker eliminates all of these issues.** Consider switching to Docker for a better experience.
+
+---
+
+## 🔄 CI/CD with GitHub Actions
+
+### Automated Testing & Quality Checks
+
+This project uses **GitHub Actions** for continuous integration and continuous deployment. Every push and pull request automatically triggers comprehensive testing and quality checks.
+
+### Active Workflows
+
+#### 1. 🧪 Django CI Tests
+**Runs on:** Push/PR to main, master, develop branches
+
+**What it does:**
+- ✅ Tests across Python 3.9, 3.10, 3.11, and 3.12
+- ✅ Installs all GeoDjango dependencies (GDAL, GEOS, PROJ, SpatiaLite)
+- ✅ Runs Django system checks
+- ✅ Validates database migrations
+- ✅ Executes full test suite with coverage reporting
+- ✅ Uploads coverage reports to Codecov
+
+**Status:** ![Django CI](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/django-tests.yml/badge.svg)
+
+#### 2. 🎨 Code Quality
+**Runs on:** Push/PR to main, master, develop branches
+
+**What it does:**
+- ✅ Linting with flake8
+- ✅ Code formatting checks with black
+- ✅ Import ordering with isort
+- ✅ Django deployment checks
+- ✅ Security scanning with safety
+- ✅ Vulnerability detection with bandit
+
+**Status:** ![Code Quality](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/code-quality.yml/badge.svg)
+
+#### 3. ⚡ Quick Tests
+**Runs on:** Push to feature branches
+
+**What it does:**
+- ✅ Fast feedback loop (< 5 minutes)
+- ✅ Si  ersion (3.11) for speed
+- ✅ Full test suite execution
+- ✅ Django system checks
+
+**Purpose:** Provide rapid feedback to developers working on feature branches
+
+### Viewing Test Results
+
+1. **On GitHub:**
+   - Go to your repository
+   - Click the "Actions" tab
+   - View all workflow runs and their status
+   - Click any run for detailed logs
+
+2. **In Pull Requests:**
+   - Status checks appear automatically
+   - Red ❌ = Tests failed
+   - Green ✅ = All checks passed
+   - View details by clicking the check
+
+### Running Tests Locally
+
+Before pushing changes, run tests locally using Docker:
+
+```bash
+# Ensure Docker containers are running
+docker-compose up -d
+
+# Run all tests
+docker-compose exec web python manage.py test app.tests -v 2
+
+# Run specific test class
+docker-compose exec web python manage.py test app.tests.UserProfileViewSetTestCase
+
+# Run with coverage
+docker-compose exec web coverage run --source='.' manage.py test app.tests
+docker-compose exec web coverage report
+docker-compose exec web coverage html  # Generates HTML report in htmlcov/
+```
+
+### Test Coverage
+
+The project includes comprehensive tests for:
+
+**✅ UserProfileViewSet API** (16 test cases)
+- List/retrieve/update/delete operations
+- Permission checks (staff vs superuser)
+- Profile field validation
+- Geographic location handling
+- Serializer field verification
+
+**✅ UserViewSet API** (8 test cases)
+- Read-only operations (list/retrieve)
+- Permission filtering
+- Nested profile data
+- Method restriction (POST/PUT/PATCH/DELETE not allowed)
+
+**✅ UserProfile Model** (6 test cases)
+- Auto-creation on user signup
+- Default values and validation
+- Geographic location storage
+- Cascade deletion
+- String representation
+
+**Total:** 30+ test cases covering API endpoints, models, permissions, and edge cases
+
+### Setting Up Your Repository
+
+To enable GitHub Actions for your fork:
+
+1. **Update Badge URLs** in README.md:
+```markdown
+![Django CI](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/django-tests.yml/badge.svg)
+![Code Quality](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/code-quality.yml/badge.svg)
+```
+
+2. **Push to GitHub:**
+```bash
+git add .github/workflows/
+git commit -m "Add CI/CD workflows"
+git push origin main
+```
+
+3. **Workflows activate automatically** - No configuration needed!
+
+4. **(Optional) Enable Codecov:**
+   - Sign up at https://codecov.io
+   - Add your repository
+   - Get the upload token
+   - Add token to GitHub Secrets as `CODECOV_TOKEN`
+
+### Customizing Workflows
+
+**Add more Python versions:**
+
+Edit `.github/workflows/django-tests.yml`:
+```yaml
+matrix:
+  python-version: [3.9, '3.10', 3.11, 3.12, 3.13]  # Add 3.13
+```
+
+**Change trigger branches:**
+
+Edit any workflow file:
+```yaml
+on:
+  push:
+    branches: [ main, develop, staging ]  # Add staging branch
+```
+
+**Make checks blocking:**
+
+Remove `continue-on-error: true` from steps you want to be mandatory
+
+### Workflow Files Location
+
+All workflows are in `.github/workflows/`:
+- `django-tests.yml` - Main test suite
+- `code-quality.yml` - Linting and security
+- `quick-test.yml` - Fast feedback for PRs
+- `README.md` - Detailed CI/CD documentation
+
+### Benefits of Automated Testing
+
+🎯 **Catch bugs early** - Before they reach production
+🎯 **Consistent quality** - Every commit is tested
+🎯 **Confidence in changes** - Refactor without fear
+🎯 **Documentation** - Tests show how code should work
+🎯 **Team collaboration** - Clear feedback on PRs
+🎯 **Security monitoring** - Automatic vulnerability scanning
 
 ---
 
